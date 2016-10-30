@@ -1,0 +1,241 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Talkingjackolanterns by SamMatt87</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-dark.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/SamMatt87/TalkingJackOLanterns">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/SamMatt87/TalkingJackOLanterns/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/SamMatt87/TalkingJackOLanterns/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>Talkingjackolanterns</h1>
+          <p>A Raspberry Pi project for talking Jack O Lanterns that change colour.</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/SamMatt87">SamMatt87</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
+        </div>
+
+        <h1>
+<a id="introduction" class="anchor" href="#introduction" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Introduction</h1>
+
+<p>For my first Raspberry Pi project, I decided to create a set of talking Jack O' Lanterns. This project was inspired by the Pumpkin Pi project at <a href="http://begillespie.github.io/Pumpkin_Pi/">http://begillespie.github.io/Pumpkin_Pi/</a>. In this website, I detail the components I used as well as the necessary code. The full code can be found on my GitHub page at <a href="https://github.com/SamMatt87/TalkingJackOLanterns">https://github.com/SamMatt87/TalkingJackOLanterns</a>.</p>
+
+<h1>
+<a id="components" class="anchor" href="#components" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Components</h1>
+
+<p>The Model of Raspberry Pi that I used for this project was a Raspberry Pi 3. I used a ribbon cable with a cobbler breakout to connect to the main circuit board. I then used jumper cables to connect this to two smaller circuit boards, one for each pumpkin, in order to extend the cables so they would reach each pumpkin, I soldered each end of the jumper wires to twisted pairs of cables found in a standard cat5 cable. The smaller boards were needed in order to fit inside the pumpkin. Each board had six 10mm LEDs, two red, two green, and two yellow. One of the boards also had a pir motion sensor.</p>
+
+<h1>
+<a id="code" class="anchor" href="#code" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Code</h1>
+
+<p>The code for the pumpkins split up by their function is shown below.</p>
+
+<h2>
+<a id="importing-modules" class="anchor" href="#importing-modules" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Importing Modules</h2>
+
+<pre><code>import RPi.GPIO as GPIO
+import time
+import random
+import signal
+import sys
+import pygame
+from pygame import mixer
+</code></pre>
+
+<h2>
+<a id="setting-up-the-motion-sensor" class="anchor" href="#setting-up-the-motion-sensor" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Setting Up the Motion Sensor</h2>
+
+<pre><code>GPIO.setmode(GPIO.BCM)
+GPIO.setup(6, GPIO.IN)
+</code></pre>
+
+<h2>
+<a id="setting-up-the-leds" class="anchor" href="#setting-up-the-leds" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Setting up the LEDs</h2>
+
+<pre><code>leds = []
+leds_left = []
+leds_right = []
+class LEDRight:
+    def __init__(self, pin):
+        self.pin = pin
+        leds_right.append(self)
+        leds.append(self)
+        GPIO.setup(self.pin, GPIO.OUT)
+
+    def on(self):
+        GPIO.output(self.pin, True)
+
+    def off(self):
+        GPIO.output(self.pin, False)
+
+class LEDLeft:
+    def __init__(self, pin):
+        self.pin = pin
+        leds_left.append(self)
+        leds.append(self)
+        GPIO.setup(self.pin, GPIO.OUT)
+
+    def on(self):
+        GPIO.output(self.pin, True)
+
+    def off(self):
+        GPIO.output(self.pin, False)
+
+RedLED = LEDRight(17)
+YellowLED = LEDRight(27)
+GreenLED = LEDRight(22)
+RedLED2 = LEDLeft(18)
+YellowLED2 = LEDLeft(23)
+GreenLED2 = LEDLeft(24)
+</code></pre>
+
+<h2>
+<a id="defining-lighting-sequences" class="anchor" href="#defining-lighting-sequences" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Defining Lighting Sequences</h2>
+
+<pre><code>def PowerOn():
+    for i in range(len(leds_right)):
+                   leds_right[i].on()
+    time.sleep(5)
+    for i in range(len(leds_right)):
+                   leds_right[i].off()
+                   leds_left[i].on()
+    time.sleep(5)
+    for i in range(len(leds_left)):
+                   leds_left[i].off()
+
+
+def BOO():
+    RedLED.on()
+    RedLED2.on()
+    time.sleep(3)
+    RedLED.off()
+    RedLED2.off()
+
+def Scare(s):
+    x = 0
+    while x&lt;s*5:
+        for i in range(len(leds_right)):
+            leds_right[i].on()
+            leds_left[i].on()
+            time.sleep(0.2)
+            leds_right[i].off()
+            leds_left[i].off()
+        x=x+1
+
+def TalkingLeft(s):
+    YellowLED.on()
+    x = 0
+    while x &lt; s:
+        leds_left[x % 3].on()
+        time.sleep(1)
+        leds_left[x % 3].off()
+        x = x+1
+        YellowLED.off()
+
+def TalkingRight(s):
+    x = 0
+    YellowLED2.on()
+    while x &lt; s:
+        leds_right[x % 3].on()
+        time.sleep(1)
+        leds_right[x % 3].off()
+        x = x+1
+    YellowLED2.off()
+
+def TalkingBoth(s):
+    x = 0
+    while x &lt; s:
+        leds_left[x % 3].on()
+        leds_right[x % 3].on()
+        time.sleep(1)
+        leds_left[x % 3].off()
+        leds_right[x % 3].off()
+        x = x+1
+
+def Resting(s):
+    YellowLED.on()
+    YellowLED2.on()
+    time.sleep(s)
+    YellowLED.off()
+    YellowLED2.off()
+
+def Laughing(s):
+    x=0
+    while x&lt;s*5:
+        RedLED.on()
+        RedLED2.on()
+        time.sleep(0.1)
+        RedLED.off()
+        RedLED2.off()
+        GreenLED.on()
+        GreenLED2.on()
+        time.sleep(0.1)
+        GreenLED.off()
+        GreenLED2.off()
+        x=x+1
+</code></pre>
+
+<h2>
+<a id="executing-the-sequences-and-sound-and-monitoring-the-motion-sensor" class="anchor" href="#executing-the-sequences-and-sound-and-monitoring-the-motion-sensor" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Executing the Sequences and Sound and Monitoring the Motion Sensor</h2>
+
+<pre><code>PowerOn()
+
+while True:
+    if GPIO.input(6):
+        print "Trick or Treat"
+        Slumber.play()
+        time.sleep(1)
+        Laughing(2)
+        Scare(1.5)
+        Resting(5)
+        Choose.play()
+        Resting(1)
+        Scare(3.5)
+        Resting(0.5)
+        Scare(1)
+        Resting(1)
+        TalkingBoth(3)
+        Resting(2)
+        Remember.play()
+        Resting(1)
+        TalkingBoth(6)
+        Greedy.play()
+        Resting(1.5)
+        Scare(1)
+        Laughing(10)
+</code></pre>
+
+<h1>
+<a id="result" class="anchor" href="#result" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Result</h1>
+
+<p>You can see the result on Youtube at <a href="https://www.youtube.com/watch?v=e2qxbzR1ie4">https://www.youtube.com/watch?v=e2qxbzR1ie4</a> and a nighttime version at <a href="https://www.youtube.com/watch?v=CApgn8pcvtQ">https://www.youtube.com/watch?v=CApgn8pcvtQ</a></p>
+      </section>
+
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
